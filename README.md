@@ -6,3 +6,5 @@ Python- (using SKlearn) A simple comparison of classification algorithms is done
 
 R - A simple comparison of classification algorithms is done in this project. The database used is heart diesease dataset from University of California, Irvine.The whole project is impelmented using R. Code for R and output graphs are included in this project. 
 
+RMD - A simple R mark down file is also included which does some basic EDA and gains inferences.
+
