@@ -1,0 +1,189 @@
+---
+title: "titanic"
+author: "omkar waghmare"
+date: "19/02/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Importing all neccessory libraries
+```{r}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(maps)
+```
+
+Importing the data - titanic dataset(https://www.kaggle.com/c/titanic/data)
+```{r}
+p1df <- read_csv("titanic.csv")
+```
+
+#### Analyzing the data
+```{r}
+colnames(p1df)
+```
+
+The data contains a total of 13 columns, lets see the number of rows:
+```{r}
+nrow(p1df)
+```
+
+summarizing the data columns
+```{r}
+summary(p1df)
+```
+
+#### Breif Data Description
+Survival : 0 = No, 1 = Yes <br /> 
+pclass : Passenger class : 1 = 1st, 2 = 2nd, 3 = 3rd <br /> 
+sex : M, F <br /> 
+Age : Age in years<br /> 
+sibsp : # of siblings/spouses abord the Titanic<br /> 
+parch : # of parents/children abord the Titanic<br /> 
+ticket : ticket number<br /> 
+fare : Passenger Fare<br /> 
+cabin : cabin number<br /> 
+embarked : Port of Embarkation : C = Cherbough, Q = Queenstown, S = Southampton<br /> 
+
+```{r}
+head(p1df)
+```
+<br /> <br /> 
+***Q1(Ans) - The data is already in tidy format as each variable forms a column, each observation forms a row and each type of observational unit forms a table***
+<br /> <br /> 
+
+<br /> 
+### Since Survived is our main variable, all graphs and observations will be with respect to it.
+
+### plot - 1
+Plotting people who survived v/s who didn't
+```{r}
+Survived <- p1df %>% group_by(Survived) %>% summarise(count = n())
+ggplot(Survived, aes(x = as.factor(Survived), y = count, fill = Survived)) + 
+  geom_bar(stat = "identity") +theme_minimal() + 
+  labs(title = "People who did not Survive v/s people who did ") +  
+  xlab ("Survived")
+```
+<br /> 
+As we can see, The number of people who did not survive is significantly higher than those who did.
+
+### plot - 2
+Seeing male v/s female survival ratio
+```{r}
+Survived_male_female <- p1df %>% group_by(Survived, Sex) %>% summarise(count = n())
+ggplot(Survived_male_female, aes(x = as.factor(Survived), y = count,  fill = Survived)) +
+  facet_wrap(vars(Sex),nrow = 2, ncol = 1)+ 
+  geom_bar(stat = "identity") + 
+  theme_minimal() + 
+  labs(title = "Survival male v/s Female")+ 
+  xlab("Survived")
+```
+<br /> 
+As we can see that the number of females survived was significantly higher than the number of males survived. This makes sense as females and children were given priority to get into the life boats.
+
+### plot - 3
+<br /> 
+We also know that people who were in the first class were given more preference in boarding the life boats. Lets see if our data actually confirms with this theory.
+
+```{r}
+pclass <- p1df %>% group_by(Pclass, Survived) %>% summarise(count = n())
+ggplot(pclass, aes(x = as.factor(Survived), y = count , fill = as.factor(Survived))) + 
+  facet_wrap(~Pclass,ncol = 3) +
+  geom_bar(stat = 'identity') +
+  theme_linedraw() +
+  labs(title = "Survival with respect to class") + 
+  xlab("Pclass")
+```
+<br /> 
+As we can see that highest numbers of passengers who didnot survive belonged to the third class. It is also interesting to note that the number of passengers that survived who belonged to the third class is almost equal to the number of passengers that survived blonging to the first class. This is because, the total nummber of passengers that were travelling in the third class were way more than the number of passengers travelling in the first class.
+
+The graph below explains this
+
+### plot - 4
+<br /> 
+number of passengers in each class
+```{r}
+class_numbers <- p1df %>% group_by(Pclass) %>% summarise(count = n())
+ggplot(class_numbers, aes(x = Pclass, y = count, fill = Pclass)) +
+  geom_bar(stat = "identity") +
+  theme_linedraw() +
+  labs(title = 'number of passengers in each class') +
+  xlab('Pclass')
+```
+<br /> 
+According to the graph, number of passengers in the third class are almost double to that of passengers in the first and second class.
+
+
+<br /> 
+We also know that females and children were given preference to board the life boats. Combining this with the class wise boarding.
+Lets analyse the number of survivors in each class with respect to their title.
+
+extracting titles from names:
+```{r}
+extractTitle <- function(Name) {
+  Name <- as.character(Name)
+  
+  if (length(grep("Miss.", Name)) > 0) {
+    return ("Miss.")
+  } else if (length(grep("Master.", Name)) > 0) {
+    return ("Master.")
+  } else if (length(grep("Mrs.", Name)) > 0) {
+    return ("Mrs.")
+  } else if (length(grep("Mr.", Name)) > 0) {
+    return ("Mr.")
+  } else {
+    return ("Other")
+  }
+}
+
+titles <- NULL
+for (i in 1:nrow(p1df)) {
+  titles <- c(titles, extractTitle(p1df[i,"Name"]))
+}
+p1df$titles <- titles
+```
+
+### plot - 5
+Plotting the data
+
+```{r}
+ggplot(p1df,aes(x = titles, fill = factor(Survived))) + 
+  geom_bar(width = 0.5) + 
+  facet_wrap(~Pclass) +
+  ggtitle("Pclass")+
+  xlab("Title") +
+  ylab("Total Count") +
+  labs(fill = "Survived") + theme_minimal()
+```
+<br /> 
+As we can see that Females and Children belonging to all classes had a higher survival rate than Males. We can also distinctly see that majority of males belonging to the third class didnot survive. And almost every child and female belonging to the first and second class survied.
+<br /> 
+
+### plot - 6
+Now lets see if number of parents/children made a difference in survival. That is if the ParCh variabel helps us in determining the survival.
+
+```{r}
+p1df$Parch <- as.factor(p1df$Parch)
+ggplot(p1df, aes(x = Parch, fill = as.factor(Survived))) +
+  geom_bar() +
+  facet_wrap(~Pclass + titles, ncol = 5) + 
+  ggtitle("Pclass, Title") +
+  xlab("ParCh, number of kids/parents") +
+  ylab("Total Count") +
+  ylim(0,30) +
+  labs(fill = "Survived")
+```
+<br /> 
+An interesting observation that can be made from this plot is that, in general passengers with title Master and Miss had a higher chance of survival. Along with that it is also interesting to note that women and men (Mr. and Mrs.) who had more than two children have lower survival rates than their counterparts.
+
+## Inference
+<br /> 
+From the Exploratory Data Analysis that we just performed, These inferences were drawn:<br /> 
+  1) Passengers belonging to the first and second class in general had a higher chance of survival<br /> 
+  2) Women and Children belonging to all class had a higher chance of survival.<br /> 
+  3) Men in general had low chances of survival. But men belonging to the third class had the least chance of survival.<br /> 
+  4) More the number of Children, lesser the chances of Survival.<br /> 
